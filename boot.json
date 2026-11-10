@@ -1,0 +1,64 @@
+{
+  "name": "HonestMarkets",
+  "nickName": {
+    "cn": "誠實小販+",
+    "en": "HonestMarkets+"
+  },
+  "version": "0.5.16.0",
+  "styleFileList": [
+    "HonestMarkets.css"
+  ],
+  "scriptFileList_earlyload": [],
+  "scriptFileList_inject_early": [],
+  "scriptFileList_preload": [],
+  "scriptFileList": [
+    "HonestMarkets.js",
+    "HonestMarkets_Encounters.js",
+    "PoseDescription.js",
+    "HonestMarkets_PhotographerPose.js",
+    "HonestMarkets_Chase.js"
+  ],
+  "tweeFileList": [
+    "HonestMarkets_Widgets.twee",
+    "PoseDescription_Widgets.twee",
+    "HonestMarkets_Encounters.twee"
+  ],
+  "imgFileList": [],
+  "additionFile": [
+    "README.md"
+  ],
+  "addonPlugin": [
+    {
+      "modName": "TweeReplacer",
+      "addonName": "TweeReplacerAddon",
+      "modVersion": "1.0.0",
+      "params": [
+        {
+          "passage": "Connudatus Markets",
+          "findString": "if dangerEvent(1, 14000)",
+          "replace": "if 1"
+        },
+        {
+          "passage": "Connudatus Markets",
+          "findString": "<<connudatusMarketsLewdEvents>>",
+          "replace": "<<HonestMarkets_Intro>>"
+        },
+        {
+          "passage": "Widgets Journal",
+          "findString": "<<if Object.keys($plots).length gte 1>> /* display plot readiness */",
+          "replace": "<<if _hasProduce>>\n\t\t<br>\n\t\t<details class=\"journal\">\n\t\t\t<summary class=\"journal\">商品行情</summary>\n\t\t\t<<honestMarketsMarketJournal>>\n\t\t</details>\n\t<</if>>\n\t<<if Object.keys($plots).length gte 1>> /* display plot readiness */"
+        }
+      ]
+    }
+  ],
+  "dependenceInfo": [
+    {
+      "modName": "TweeReplacer",
+      "version": "^1.0.0"
+    },
+    {
+      "modName": "maplebirch",
+      "version": ">=5.5.6"
+    }
+  ]
+}

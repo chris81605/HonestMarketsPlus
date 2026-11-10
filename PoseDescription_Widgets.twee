@@ -1,0 +1,6 @@
+:: Widget PoseDescription [widget]
+/*
+ * v0.2.5：四個 pose Macro 已改由 pose-description.js 的 Macro.add 註冊。
+ * 此檔保留作為模組打包相容佔位檔，不可再宣告同名 <<widget>>，否則會重複註冊。
+ * 使用方式、範例及安全提醒請參考 README.md。
+ */

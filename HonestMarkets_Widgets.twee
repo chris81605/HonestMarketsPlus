@@ -1,0 +1,478 @@
+:: Widgets HonestMarkets[widget]
+<<widget "HonestMarkets_Intro">>
+    <<honestMarketsBegin>>
+    <<honestMarketsEncounterDebugControls>>
+    <<if setup.HonestMarkets.isBannedToday()>>
+        <span class="grey"><<print setup.HonestMarkets.marketBanText()>></span><br><br>
+    <<elseif setup.HonestMarkets.isMarketOpen()>>
+        你走在各色攤位之間，琳瑯滿目的商品令人眼花撩亂。周圍人頭攢動，叫賣聲不絕於耳。<br>
+        要是沒有目標，你恐怕連逛三天三夜也難買到心儀的商品。<br><br>
+        你要重點關注哪方面的商品？
+        <br><br>
+        <<link [[購買商品|HonestMarkets Products]]>><<run setup.HonestMarkets.prepareMarketEncounter("HonestMarkets Products", "products")>><</link>><br>
+        <<link [[購買種子和肥料|HonestMarkets Seeds]]>><<run setup.HonestMarkets.prepareMarketEncounter("HonestMarkets Seeds", "seeds")>><</link>><br>
+        <<link [[購買服裝|HonestMarkets Clothing]]>><<run setup.HonestMarkets.prepareMarketEncounter("HonestMarkets Clothing", "clothing")>><</link>><br>
+        <<link [[只是閒逛|HonestMarkets Walk]]>><<run setup.HonestMarkets.endVisit()>><</link>><br><br>
+    <<else>>
+        <span class="grey"><<print setup.HonestMarkets.marketClosedText()>></span><br><br>
+    <</if>>
+        <<getouticon>><<link [[離開|Connudatus Street]]>><<run setup.HonestMarkets.endVisit()>><<endevent>><</link>>
+<</widget>>
+
+:: HonestMarkets Products[]
+<<honestMarketsEncounterDebugControls>>
+<<if setup.HonestMarkets.isBannedToday()>>
+    <span class="grey"><<print setup.HonestMarkets.marketBanText()>></span>
+<<elseif setup.HonestMarkets.isMarketOpen()>>
+    市場裡擠滿了大大小小的攤位。攤販們高聲招呼著來往的客人，貨箱與籃筐一路堆到腳邊，各式商品混雜其中。有人正為幾便士討價還價，也有人乾脆抱走整箱貨物。
+    每個攤位的價格和存貨都不太一樣，買得多些通常比較容易談到好價錢。至於那些寫在紙板上的價格究竟有多划算，就得靠你自己判斷了。<br><br>
+    你打算先逛逛哪一類商品？<br><br>
+    <<honestMarketsCategories>>
+    <br>
+<<if setup.HonestMarkets.canExploreMore()>>
+	<<link "探索更多商品 (00:30)" "HonestMarkets Products">><<pass 30>><<run setup.HonestMarkets.refreshProductOffers()>><<run setup.HonestMarkets.prepareMarketEncounter("HonestMarkets Products", "refresh")>><</link>><br>
+	<span class="grey">你可以花些時間繼續逛逛，說不定會有新的發現。</span>
+<<else>>
+	<span class="grey">時間已經不早了，攤販們陸續開始收拾，已經沒有時間再仔細探索市場了。</span>
+<</if>>
+<br><br>
+<<honestMarketsOrphanage>>
+<<honestMarketsOrphanageDebug>>
+<<else>>
+    <span class="grey"><<print setup.HonestMarkets.marketClosedText()>></span>
+<</if>>
+<br><br>
+<<link [[返回市場入口|Connudatus Markets]]>><</link>><br>
+<<getouticon>><<link [[離開|Connudatus Street]]>><<run setup.HonestMarkets.endVisit()>><<endevent>><</link>>
+
+
+:: HonestMarkets Orphanage[]
+<<if !setup.HonestMarkets.canShowOrphanageOrder()>>
+    <span class="grey">剛才看到的採購機會已經不合適了。</span><br><br>
+    <<link [[返回商品市場|HonestMarkets Products]]>><</link>>
+<<else>>
+    市集裡堆著今天剛送來的食材。你想到孤兒院總是需要更多食物，也許可以趁現在替他們添上一些。<br><br>
+    你挑了幾樣價格和供貨都還算合適的東西，攤販可以直接替你整理好，再送往孤兒院。<br><br>
+    <<honestMarketsOrphanageList>>
+    <br><br>
+    <<set _orphanageOrder to setup.HonestMarkets.getOrphanageOrder()>>
+    <<set _orphanageLabel to "購買這些食物送往孤兒院（" + setup.HonestMarkets.moneyText(_orphanageOrder.total) + "）(00:15)">>
+    <<link _orphanageLabel "HonestMarkets Orphanage Result">><</link>><br>
+    <<link [[還是算了|HonestMarkets Products]]>><</link>>
+<</if>>
+
+:: HonestMarkets Orphanage Result[]
+<<set _orphanagePaid to setup.HonestMarkets.purchaseOrphanageOrder()>>
+<<if _orphanagePaid>>
+    你和攤販確認好要送往孤兒院的食材。幾個袋子和箱子很快被整理出來，攤販答應稍後替你送過去。<br><br>
+    至少今天，他們能吃得好一些。<br><br>
+    <<link [[繼續逛市集|HonestMarkets Products]]>><</link>>
+<<else>>
+    <span class="grey">情況已經改變，你現在沒辦法完成這筆採購。</span><br><br>
+    <<link [[返回商品市場|HonestMarkets Products]]>><</link>>
+<</if>>
+
+:: HonestMarkets Category[]
+<<honestMarketsEncounterDebugControls>>
+<<if setup.HonestMarkets.isBannedToday()>>
+    <span class="grey"><<print setup.HonestMarkets.marketBanText()>></span>
+<<elseif setup.HonestMarkets.isMarketOpen()>>
+    你來到出售<<print setup.HonestMarkets.currentCategoryName()>>的攤位前。今天擺出來的貨品只有其中一部分。<br><br>
+    <<honestMarketsOffers>>
+    <<honestMarketsTheftAction>>
+<<else>>
+    <span class="grey"><<print setup.HonestMarkets.marketClosedText()>></span>
+<</if>>
+<br>
+<<link [[看看其他類別|HonestMarkets Products]]>><</link>><br>
+<<getouticon>><<link [[離開|Connudatus Street]]>><<run setup.HonestMarkets.endVisit()>><<endevent>><</link>>
+
+:: HonestMarkets Favorite Food[]
+<<set _favoriteSelection to setup.HonestMarkets.getFavoriteFoodSelection()>>
+<<if !_favoriteSelection>>
+    <span class="grey">這項商品已經不在攤位上了。</span><br><br>
+<<else>>
+    <<foodstufficon `_favoriteSelection.itemId`>><b><<print _favoriteSelection.item.singular or _favoriteSelection.item.name or _favoriteSelection.itemId>></b><br><br>
+    <<print setup.HonestMarkets.renderFavoriteFoodDetails()>>
+    <br><br>
+<</if>>
+<<link [[返回攤位|HonestMarkets Category]]>><</link>><br>
+<<link [[看看其他類別|HonestMarkets Products]]>><</link>>
+
+:: HonestMarkets Favorite Food Purchase[]
+<<set _favoriteSelection to setup.HonestMarkets.getFavoriteFoodSelection()>>
+<<if !_favoriteSelection>>
+    <span class="grey">這項商品已經不在攤位上了。</span><br><br>
+<<else>>
+    <<foodstufficon `_favoriteSelection.itemId`>><b><<print _favoriteSelection.item.singular or _favoriteSelection.item.name or _favoriteSelection.itemId>></b>
+    <<print setup.HonestMarkets.renderSingleDishOffer()>>
+    <br><br>
+<</if>>
+<<link [[返回攤位|HonestMarkets Category]]>><</link>><br>
+<<link [[看看其他類別|HonestMarkets Products]]>><</link>>
+
+:: HonestMarkets Favorite Food Result[]
+<<set _favoriteBought to setup.HonestMarkets.purchaseSingleDish()>>
+<<if _favoriteBought>>
+    店主把拆出來的一份包好遞給你。你收下食物，也許之後會派上用場。<br><br>
+<<else>>
+    <span class="grey">這筆交易沒有完成。也許你的錢不夠了，或者商品已經賣完。</span><br><br>
+<</if>>
+<<link [[繼續逛這個攤位|HonestMarkets Category]]>><</link>><br>
+<<link [[看看其他類別|HonestMarkets Products]]>><</link>>
+
+:: HonestMarkets Seeds[]
+<<honestMarketsEncounterDebugControls>>
+<<if setup.HonestMarkets.isBannedToday()>>
+    <span class="grey"><<print setup.HonestMarkets.marketBanText()>></span>
+<<elseif setup.HonestMarkets.isMarketOpen()>>
+    一個掛著「園藝用品」牌子的攤位吸引了你的注意。除了園藝工具，這裡也出售當季種子和肥料。<br>
+    在攤位後，一個滿臉雀斑的<<girl>>笑著向你招了招手。
+    <br><br>
+<<if $fertiliser is undefined or !$fertiliser.current>>
+	你現在還沒有肥料。
+<<else>>
+	你現在有$fertiliser.current 袋肥料。
+<</if>>
+<br>
+<<if $money gte 100000>>
+	<<gardenicon "fertiliser">><<link [[購買肥料 (£1000) (00:05)|HonestMarkets Seeds]]>><<set $fertiliser.current += 1>><<money -100000>><<pass 5>><<endevent>><</link>>
+<<else>>
+	<<gardenicon "fertiliser">>肥料 £1000 <span class="grey">（你的錢不夠）</span>
+<</if>>
+<br><br>
+本次進貨的未知種子：<br><br>
+<<honestMarketsSeeds>>
+<br>
+<span class="grey">種子每五天進貨一次。買走後本輪不會補貨，要等下一次進貨才會出現新的隨機貨品。</span>
+<br><br>
+<<link [[返回市場入口|Connudatus Markets]]>><</link>><br>
+<<getouticon>><<link [[離開|Connudatus Street]]>><<run setup.HonestMarkets.endVisit()>><<endevent>><</link>>
+<<else>>
+    <span class="grey"><<print setup.HonestMarkets.marketClosedText()>></span>
+<</if>>
+
+:: HonestMarkets Clothing[]
+<<honestMarketsEncounterDebugControls>>
+<<if setup.HonestMarkets.isBannedToday()>>
+    <span class="grey"><<print setup.HonestMarkets.marketBanText()>></span>
+<<elseif setup.HonestMarkets.isMarketOpen()>>
+    幾個服裝攤位把衣架和箱子一路擺到通道旁。這裡的款式與顏色並不固定，標價也全看攤販今天打算怎麼賣。<br><br>
+    <<honestMarketsClothing>>
+    <br>
+<<if setup.HonestMarkets.canExploreMore()>>
+    <<link "探索更多服裝 (00:30)" "HonestMarkets Clothing">><<pass 30>><<run setup.HonestMarkets.refreshClothingOffers()>><<run setup.HonestMarkets.prepareMarketEncounter("HonestMarkets Clothing", "refresh")>><</link>><br>
+    <span class="grey">花些時間尋找其他服裝攤位，重新挑選一批款式與顏色。</span>
+<<else>>
+    <span class="grey">時間已經不早了，無法再仔細探索服裝攤位。</span>
+<</if>>
+<<else>>
+    <span class="grey"><<print setup.HonestMarkets.marketClosedText()>></span>
+<</if>>
+<br><br>
+<<link [[返回市場入口|Connudatus Markets]]>><</link>><br>
+<<getouticon>><<link [[離開|Connudatus Street]]>><<run setup.HonestMarkets.endVisit()>><<endevent>><</link>>
+
+:: HonestMarkets Walk[]
+<!-- 市集探索入口：維持事件抽選、分頁返回與市場狀態的既有流程。 -->
+<<if $hour >= 16 and dangerEvent(1, 14000)>>
+    <<connudatusMarketsLewdEvents>>	
+<<else>>
+	<<connudatusMarketsStatusEvents>>
+<</if>>
+
+:: HonestMarkets Steal[]
+<<set _theft to $honestMarketsTheft>>
+<<if setup.HonestMarkets.isBannedToday()>>
+	<span class="grey"><<print setup.HonestMarkets.marketBanText()>></span>
+	<<unset $honestMarketsTheft>>
+<<elseif !setup.HonestMarkets.isMarketOpen()>>
+	<span class="grey"><<print setup.HonestMarkets.marketClosedText()>></span>
+	<<unset $honestMarketsTheft>>
+<<elseif !_theft>>
+	<span class="grey">你沒有找到適合下手的東西。</span>
+<<else>>
+	<<set $skulduggerydifficulty to _theft.difficulty>>
+	你觀察了一會兒，找到了一個可以對<<print _theft.name>>下手的機會。
+	<<if $debug>>
+		<mouse class="tooltip-small linkBlue">(?)<span class="black"><b>HonestMarkets Theft Debug</b><br>詭術可偷價格分位：<<print (_theft.pricePercentile * 100).toFixed(1)>>%<br>動態單價上限：<<print setup.HonestMarkets.moneyText(_theft.maxUnitValue)>><br>商品單價：<<print setup.HonestMarkets.moneyText(_theft.unitValue)>><br>目前庫存：<<print _theft.stockQty>><br>理論最大偷摸數量：<<print _theft.theoreticalMaxAmount>><br>庫存限制後上限：<<print _theft.maxAmount>><br>本次偷摸數量：<<print _theft.amount>><br>時段基準修正：<<print _theft.timeModifierBase>><br>本次時段修正：<<print _theft.timeModifier>><br>最終難度：<<print _theft.difficulty>><br>能力負荷：<<print (_theft.caughtLoad * 100).toFixed(1)>>%<br>基礎被抓率：<<print (_theft.baseCaughtChance * 100).toFixed(1)>>%<br>現場波動：<<print _theft.caughtVariance.toFixed(3)>>×<br>失敗後被抓機率：<<print (setup.HonestMarkets.theftCaughtChance(_theft) * 100).toFixed(1)>>%</span></mouse>
+	<</if>><br>
+	<<skulduggerydifficulty>><br><br>
+	<!--
+		原版犯罪系統以 crimeUp(value, type) 記錄分類犯罪。
+		petty 是官方用於一般小偷小摸的分類；value 使用本次鎖定商品的實際總價（£）。
+		犯罪在玩家正式「下手」時成立，因此不論之後詭術檢定成功或失敗都只記錄這一次。
+		不要把 crimeUp 移到 Result：官方會在 crimeUp 內處理潛行裝備、詭術減免、
+		Current/History/Daily/Count 等犯罪統計，重複呼叫會造成重複犯罪紀錄。
+	-->
+	<<crimeicon "mark">><<link "下手 (00:05)" "HonestMarkets Steal Result">><<crimeUp `_theft.crimeValue` "petty">><</link>><<crime "petty">><br>
+	<<link [[算了|HonestMarkets Category]]>><<unset $honestMarketsTheft>><</link>><br>
+<</if>>
+<br>
+<<link [[返回攤位|HonestMarkets Category]]>><<unset $honestMarketsTheft>><</link>><br>
+<<link [[看看其他類別|HonestMarkets Products]]>><<unset $honestMarketsTheft>><</link>><br>
+<<getouticon>><<link [[離開|Connudatus Street]]>><<unset $honestMarketsTheft>><<run setup.HonestMarkets.endVisit()>><<endevent>><</link>>
+
+:: HonestMarkets Steal Result[]
+<<set _theft to $honestMarketsTheft>>
+<<if setup.HonestMarkets.isBannedToday()>>
+	<span class="grey"><<print setup.HonestMarkets.marketBanText()>></span>
+	<<unset $honestMarketsTheft>>
+<<elseif !setup.HonestMarkets.isMarketOpen()>>
+	<span class="grey">攤販們已經開始收拾商品，你錯過了剛才找到的機會。</span>
+	<<unset $honestMarketsTheft>>
+<<elseif !_theft>>
+	<span class="grey">剛才的機會已經消失了。</span>
+<<else>>
+	<<set $skulduggerydifficulty to _theft.difficulty>>
+	<<pass 5>>
+	<<skulduggerycheck "silent">>
+	<<if $skulduggerysuccess is 1>>
+		<<run setup.HonestMarkets.completeTheft()>>
+		<span class="green">你成功摸走了<<print _theft.amount>>個<<print _theft.name>>，沒有引起注意。</span>
+	<<else>>
+		<<if setup.HonestMarkets.rollTheftCaught(_theft)>>
+			<<run setup.HonestMarkets.banMarketToday()>>
+			<span class="red">攤主當場抓住了你的動作，騷動很快引來附近其他攤販的注意。你被趕出了市場，今天別想再回來了。</span>
+		<<else>>
+			<span class="red">你沒能得手，但及時收回了手，沒有被當場逮住。</span>
+		<</if>>
+	<</if>>
+	<br><br>
+	<<skulduggeryuse $skulduggerydifficulty "target">>
+	<<unset $honestMarketsTheft>>
+<</if>>
+<br>
+<<if setup.HonestMarkets.isBannedToday()>>
+	<<getouticon>><<link [[離開|Connudatus Street]]>><<run setup.HonestMarkets.endVisit()>><<endevent>><</link>>
+<<elseif setup.HonestMarkets.isMarketOpen()>>
+	<<link [[返回攤位|HonestMarkets Category]]>><</link>><br>
+	<<link [[看看其他類別|HonestMarkets Products]]>><</link>><br>
+	<<getouticon>><<link [[離開|Connudatus Street]]>><<run setup.HonestMarkets.endVisit()>><<endevent>><</link>>
+<<else>>
+	<span class="grey"><<print setup.HonestMarkets.marketClosedText()>></span><br><br>
+	<<getouticon>><<link [[離開|Connudatus Street]]>><<run setup.HonestMarkets.endVisit()>><<endevent>><</link>>
+<</if>>
+
+
+:: HonestMarkets Clothing Preview[]
+<!-- 服裝詳情共用模板：供彈窗 Wikifier 載入，亦支援直接進入 Passage。 -->
+<<set _hmPreview to setup.HonestMarkets.getClothingPreview()>>
+<<if !_hmPreview>>
+    <span class="grey">這件服裝已經不在目前的攤位上。</span>
+<<else>>
+    <<set _hmItem to _hmPreview.item>>
+    <<set _hmOffer to _hmPreview.offer>>
+    <<set _hmColour to _hmPreview.variant.colour>>
+    <section class="hm-clothing-detail">
+        <header class="hm-clothing-detail-heading">
+            <strong><<print setup.HonestMarkets.clothingDisplayName(_hmItem)>></strong>
+            <span class="hm-clothing-detail-price"><<print setup.HonestMarkets.moneyText(_hmOffer.price)>></span>
+        </header>
+        <div class="hm-clothing-detail-content">
+            <div class="hm-clothing-detail-preview">
+                <<if $options.images is 1>>
+                    <div class="hm-preview-stage">
+                        <div id="hm-preview-render">
+                            <<hmStandaloneMannequin `_hmOffer.slot` `_hmOffer.index` `_hmColour || ""`>>
+                        </div>
+                    </div>
+                    <!-- 彈窗內重繪；直接進入 Passage 時才重新導覽，兩者皆不刷新供貨。 -->
+                    <div class="hm-clothing-detail-reload">
+                        <<link "重新整理預覽">>
+                            <<run setup.HonestMarkets.refreshPreviewImageCache()>>
+                            <<if setup.HonestMarkets.isClothingModalOpen()>>
+                                <<run setup.HonestMarkets.redrawClothingModal()>>
+                            <<else>>
+                                <<goto "HonestMarkets Clothing Preview">>
+                            <</if>>
+                        <</link>>
+                    </div>
+                <<else>>
+                    <div class="hm-clothing-detail-no-image grey">目前已關閉遊戲圖片，無法顯示模特兒預覽。</div>
+                <</if>>
+            </div>
+            <div class="hm-clothing-detail-info">
+                <div class="hm-clothing-detail-description"><<print _hmItem.description || "暫無服裝描述。">></div>
+                <div><b>顏色：</b><<print setup.HonestMarkets.clothingColourInfo(_hmColour).name || "預設">></div>
+                <div><b>暴露程度：</b><<print _hmItem.reveal ?? "未註明">></div>
+                <div><b>完整度：</b><<print _hmItem.integrity ?? "未註明">></div>
+                <<set _hmWarmth to typeof getTrueWarmth === "function" ? getTrueWarmth(_hmItem) : (_hmItem.warmth ?? 0)>>
+                <div><b>保暖：</b><<print _hmWarmth>><<if setup.WeatherDescriptions?.clothingWarmth>>（<<print setup.WeatherDescriptions.clothingWarmth(_hmWarmth)>>）<</if>></div>
+                <div class="hm-clothing-detail-traits">
+                    <b>服裝特質：</b>
+                    <<if Array.isArray(_hmItem.type) and _hmItem.type.length>>
+                        <<for _hmTrait range _hmItem.type>>
+                            <<hmClothingTrait _hmTrait>>
+                        <</for>>
+                    <<else>>
+                        <span class="grey">無</span>
+                    <</if>>
+                </div>
+            </div>
+        </div>
+        <footer class="hm-clothing-detail-actions">
+            <<if _hmPreview.variant.sold>>
+                <span class="grey">這個顏色已售出。</span>
+            <<elseif $money lt _hmOffer.price>>
+                <span class="grey">你的錢不夠。</span>
+            <<else>>
+                <<link "購買這件服裝（00:05）" "HonestMarkets Clothing">>
+                    <<run setup.HonestMarkets.buyClothing($honestMarketsClothingPreview.offerIndex, $honestMarketsClothingPreview.variantIndex)>>
+                <</link>>
+            <</if>>
+            <<if setup.HonestMarkets.isClothingModalOpen()>>
+                <<link "關閉預覽">><<run setup.HonestMarkets.closeClothingModal()>><</link>>
+            <<else>>
+                <<link [[返回服裝攤位|HonestMarkets Clothing]]>><</link>>
+            <</if>>
+        </footer>
+    </section>
+<</if>>
+
+
+
+:: HonestMarkets Standalone Clothing Traits[widget]
+<!-- 不使用原版 clothingtrait：原版會讀取商店暫存變數 _shopLocation。 -->
+<<widget "hmClothingTrait">>
+    <<set _hmTraitKey to _args[0]>>
+    <<set _hmTraitInfo to setup.shopDetails?.[_hmTraitKey]>>
+    <<if _hmTraitInfo>>
+        <<set _hmTraitFile to String(_hmTraitKey).replace(/([a-z])([A-Z])/g, "$1-$2").replace(/_/g, "-").toLowerCase()>>
+        <<if $options.images is 1>>
+            <img @src="'img/ui/clothes/traits/' + _hmTraitFile + '.png'" class="clothing-trait" @alt="_hmTraitInfo.name || _hmTraitKey">
+        <</if>>
+        <b><<print _hmTraitInfo.name || _hmTraitKey>></b>
+        <<if _hmTraitInfo.desc>>：<<print _hmTraitInfo.desc>><</if>>
+        <<if _hmTraitInfo.details and _hmTraitInfo.details isnot "none">>（<<print _hmTraitInfo.details>>）<</if>>
+    <<else>>
+        <<print _hmTraitKey>>
+    <</if>>
+    <br>
+<</widget>>
+
+:: HonestMarkets Standalone Mannequin Widgets[widget]
+<!-- 預覽僅使用角色 Canvas 渲染，不讀取服裝商店的購買／試穿狀態。 -->
+<<widget "hmStandaloneMannequin">>
+	<<if $options.images is 1>>
+		<<set _slot = _args[0]>>
+		<<set _index = _args[1]>>
+		<<set _item = setup.clothes?.[_slot]?.[_index]>>
+
+		<<if _item?.colour_options?.length > 0>>
+			<<set _col = _args[2] or _item.colour_options[0]>>
+		<<else>>
+			<<set _col = "">>
+		<</if>>
+		<<if _item?.accessory_colour_options?.length > 0>>
+			<<set _acc_col = _args[3] or _item.accessory_colour_options[0]>>
+		<<else>>
+			<<set _acc_col = "">>
+		<</if>>
+		<<if _item?.pattern_options?.length > 0>>
+			<<set _pat = _args[4] or _item.pattern_options[0]>>
+		<<else>>
+			<<set _pat = "">>
+		<</if>>
+
+		<<if _item>>
+			<!-- 市集預覽使用角色性別，不讀取原版商店設定。 -->
+			<<set _mannequinGender to $player.gender>>
+			<<set _hmMannequinHasPenis to (_mannequinGender isnot "f")>>
+			<<if _item.type?.includes("chest_bind")>>
+				<<set _breastImg to 0>>
+			<<else>>
+				<<set _breastImg to (_mannequinGender is "m" ? 0 : 3)>>
+			<</if>>
+			<<set _clothed = (((_slot != "under_upper" and $options.neverNudeMenus) or (_slot == "under_upper" and !_item.type?.includes("naked"))) and _breastImg >= 2) ? "_clothed" : "">>
+
+			<div class="hm-preview-model">
+				<<selectmodel "lighting" "shop">>
+				<<set _modeloptions.lights.gradient.enabled = false>>
+				<<set _modeloptions.lights.flat.enabled = false>>
+				<<rendermodel "lighting">>
+				<<selectmodel "main" "shop">>
+					<<set _modeloptions.tanningEnabled to false>>
+					<<set _modeloptions.mannequin to true>>
+					<<set _modeloptions.show_face to false>>
+					<<set _modeloptions.show_hair to false>>
+					<<set _modeloptions.breasts to _breastImg ? (_clothed ? "cleavage" : "default") : "">>
+					<<set _modeloptions.breast_size to _breastImg>>
+					<<set _modeloptions.crotch_visible to true>>
+					<<if _hmMannequinHasPenis>>
+						<<set _modeloptions.penis to "default">>
+					<</if>>
+					<<if $options.neverNudeMenus>>
+						<<if _slot != "under_upper" and (_mannequinGender == "f" or _mannequinGender == "h")>>
+							<<set _modeloptions.worn.under_upper.index to 12>>
+							<<set _modeloptions.worn.under_upper.colour to "pale white">>
+						<</if>>
+						<<if _slot != "under_lower" and (_item.set == _slot or _slot != 'under_upper')>>
+							<<if _hmMannequinHasPenis>>
+								<<set _modeloptions.worn.under_lower.index to 0>>
+								<<set _modeloptions.worn.under_lower.colour to "pale white">>
+							<</if>>
+						<</if>>
+					<</if>>
+					<!-- 繪製套裝主件與所有附屬部件。 -->
+					<<set _items_list = [{slot: _slot, item: _item}]>>
+					<<if _item.outfitPrimary>>
+						<<set _items_list = _items_list.concat(Object.keys(_item.outfitPrimary).map(s => { return {slot: s, item: setup.clothes[s].find(x => x.name == _item.outfitPrimary[s])} }))>>
+					<</if>>
+					<<for _clothing range _items_list>>
+						<<set _item = _clothing.item>>
+						<<set _slot = _clothing.slot>>
+						<<if _item and _modeloptions.worn?.[_slot]>>
+						<<set _modeloptions.worn[_slot].index to clothesIndex(_slot, _item)>>
+						<<set _modeloptions.alt_override to 1>>
+						<<if _col>>
+							<<set _modeloptions.worn[_slot].colour to _col>>
+							<<if _col is "custom">>
+								<<set _modeloptions.filters["worn_" + _slot + "_custom"] =
+										getCustomClothesColourCanvasFilter($customColors.color.primary,
+											$customColors.saturation.primary,
+											$customColors.brightness.primary,
+											$customColors.contrast.primary);>>
+							<</if>>
+						<</if>>
+						<<if _acc_col>>
+							<<set _modeloptions.worn[_slot].accColour to _acc_col>>
+							<<if _acc_col is "custom">>
+								<<set _modeloptions.filters["worn_" + _slot + "_acc_custom"] =
+										getCustomClothesColourCanvasFilter($customColors.color.secondary,
+											$customColors.saturation.secondary,
+											$customColors.brightness.secondary,
+											$customColors.contrast.secondary);>>
+							<</if>>
+						<</if>>
+						<<if _pat and _item.pattern_options?.includes(_pat)>>
+							<<set _modeloptions.worn[_slot].pattern to _pat>>
+						<</if>>
+						<<set _position to setup.clothes?.[_slot]?.[_modeloptions.worn[_slot].index]?.holdPosition>>
+						<<if _position or _slot is "handheld">>
+							<<set _modeloptions.arm_right to "hold">>
+							<<switch _position>>
+								<<case "left_cover">>
+									<<set _modeloptions.arm_left to "cover">>
+									<<set _modeloptions.arm_right to "idle">>
+								<<case "right_cover">>
+									<<set _modeloptions.arm_right to "cover">>
+								<<case "clutch">>
+									<<set _modeloptions.arm_left to "cover">>
+								<<case "cover_both">>
+									<<set _modeloptions.arm_left to "cover">>
+									<<set _modeloptions.arm_right to "cover">>
+								<<case "idle_both" "idle">>
+									<<set _modeloptions.arm_right to "idle">>
+							<</switch>>
+						<</if>>
+						<</if>>
+					<</for>>
+
+				<<rendermodel "canvas-mannequin">>
+
+
+			</div>
+		<</if>>
+	<</if>>
+<</widget>>
