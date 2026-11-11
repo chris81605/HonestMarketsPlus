@@ -1928,7 +1928,12 @@
             return true;
         }
     });
-    // 街頭按摩師：隨機 NPC、固定本次差分，所有效果經原版巨集結算。
+    // 街頭按摩師（v0.5.16.1）：階段推進、時間與數值效果在 resolve 中結算一次；文案留在 Twee。
+    // 一般隨機文案指針彼此獨立；主動路線則固定整場 encourageScene，三幕共用同一組 case。
+    // 修改興奮增量時須保留原版 <<arousal>> Widget 的結算方式，避免重繪重複加值。
+    // 主動路線的「完整三幕劇情組」數量。每組必須同時提供三幕相同編號的 case。
+    // 目前只有 case 0；新增完整的 case 1 後才改成 2，以此類推。
+    const STREET_MASSEUR_ENCOURAGE_SCENE_COUNT = 1;
     HM.registerMarketEncounter("street_masseur", {
         weight: 10,
         timeWeights: { preparing: 0.3, morning: 0.7, daytime: 1.1, peak: 1.2, late: 1.1, closing: 0.5 },
@@ -1936,42 +1941,101 @@
         output: "HonestMarketsEncounterStreetMasseur",
         resultOutput: "HonestMarketsEncounterStreetMasseurResult",
         create(e) {
-            e.overstepChance = HM.allureChance(20, 60);
+            // 事件建立時拍下衣著狀態：裸體與濕透造成的暴露必須分開判定。
+            const clothes = HM.marketCollectorClothing();
+            const upperExposure = Math.max(
+                HM.ambushItemExposure("upper"),
+                HM.ambushItemExposure("over_upper"),
+                HM.ambushItemExposure("under_upper")
+            );
+            const lowerExposure = Math.max(
+                HM.ambushItemExposure("lower"),
+                HM.ambushItemExposure("over_lower"),
+                HM.ambushItemExposure("under_lower")
+            );
+            const nakedUpper = !clothes.upperOuter && !clothes.upperUnder;
+            const nakedLower = !clothes.lowerOuter && !clothes.lowerUnder;
+            // 0 正常、1 部分暴露、2 明顯暴露、3 全裸。
+            e.exposureReaction = nakedUpper && nakedLower ? 3
+                : upperExposure >= 2 || lowerExposure >= 2 || nakedUpper || nakedLower ? 2
+                : upperExposure >= 1 || lowerExposure >= 1 ? 1 : 0;
+            // 只提高按摩師「越界」機率，不影響市場抽到按摩師事件的 weight。
+            // 基礎機率依原版誘惑值 20～60%；全裸時額外 +35 個百分點。
+            const exposureBonus = [0, 8, 18, 35][e.exposureReaction];
+            e.overstepChance = Math.min(95, HM.allureChance(20, 60) + exposureBonus);
             e.overstep = HM.rollChance(e.overstepChance);
             e.targetBody = rand(0, 1) ? "chest" : "lower";
             e.introVariant = rand(0, 2);
             e.touchVariant = rand(0, 2);
             e.responseVariant = rand(0, 2);
+            e.stageVariant = rand(0, 2);
+            e.ignoreStage = 0;
+            e.encourageStage = 0;
+            // 三幕共用的完整劇情指針；開始主動路線時才決定，後續不重新抽。
+            e.encourageScene = null;
             e.paid = false;
         },
         resolve(e, action) {
-            if (e.stage === "initial") {
-                if (action === "leave") { e.result = "declined"; return true; }
-                if (action !== "start") return false;
-                if ((Number(State.variables.money) || 0) < 5000) { e.result = "cannot_pay"; return true; }
-                Wikifier.wikifyEval('<<money -5000>>');
-                e.paid = true;
-                HM.advanceMinutes(5);
-                if (e.overstep) { e.stage = "touch_choice"; return true; }
-                HM.advanceMinutes(10);
-                Wikifier.wikifyEval('<<tiredness -8>><<stress -5>>');
-                e.result = "normal";
-                return true;
-            }
-            if (e.stage !== "touch_choice" || !e.paid) return false;
-            const effects = {
-                stop: { tiredness: -2, stress: 5, arousal: 0, minutes: 0 },
-                warn: { tiredness: -8, stress: -2, arousal: 0, minutes: 10 },
-                ignore: { tiredness: -8, stress: -5, arousal: 100, minutes: 10 },
-                encourage: { tiredness: -8, stress: -8, arousal: 200, minutes: 10 }
+            const effect = (macros, minutes) => {
+                if (minutes) HM.advanceMinutes(minutes);
+                if (macros) Wikifier.wikifyEval(macros);
             };
-            const choice = effects[action];
-            if (!choice) return false;
-            if (action === "encourage" && !(typeof hasSexStat === "function" && hasSexStat("exhibitionism", 4))) return false;
-            if (choice.minutes) HM.advanceMinutes(choice.minutes);
-            Wikifier.wikifyEval(`<<tiredness ${choice.tiredness}>><<stress ${choice.stress}>>${choice.arousal ? `<<arousal ${choice.arousal}>>` : ""}`);
-            e.result = action;
-            return true;
+            const finish = (result, macros, minutes) => {
+                effect(macros, minutes);
+                e.result = result;
+                return true;
+            };
+            const nextStage = (route, level, gain, minutes) => {
+                // 僅在 resolve(action) 內增加興奮，重新渲染 Passage 不會重複結算。
+                effect(`<<arousal ${gain}>>`, minutes);
+                e.stage = route;
+                e[route === "ignore_stage" ? "ignoreStage" : "encourageStage"] = level;
+                if (route === "ignore_stage") e.stageVariant = rand(0, 2);
+                return true;
+            };
+            if (e.stage === "initial") {
+                if (action === "leave") return finish("declined");
+                if (action !== "start") return false;
+                if ((Number(State.variables.money) || 0) < 5000) return finish("cannot_pay");
+                effect('<<money -5000>>', 5);
+                e.paid = true;
+                if (e.overstep) {
+                    // 初次越界無論玩家選擇如何，均先結算一次生理興奮。
+                    effect('<<arousal 50>>');
+                    e.stage = "touch_choice";
+                    return true;
+                }
+                return finish("normal", '<<tiredness -8>><<stress -12>>', 10);
+            }
+            if (!e.paid) return false;
+            const canEncourage = typeof hasSexStat === "function" && hasSexStat("exhibitionism", 4);
+            if (e.stage === "touch_choice" || e.stage === "ignore_stage") {
+                const level = e.stage === "ignore_stage" ? e.ignoreStage : 0;
+                if (action === "stop") return finish("stop", '<<tiredness -2>><<stress 5>>');
+                if (action === "warn") return finish("warn", '<<tiredness -8>><<stress -2>>', Math.max(0, 10 - level * 2));
+                if (action === "encourage") {
+                    if (!canEncourage) return false;
+                    // 只在玩家選擇進入主動路線的瞬間抽選一次。
+                    // 不與 ignoreStage 的 stageVariant 混用，避免換幕時跳劇情。
+                    e.encourageScene = rand(0, STREET_MASSEUR_ENCOURAGE_SCENE_COUNT - 1);
+                    return nextStage("encourage_stage", 1, 200, 2);
+                }
+                if (action === "ignore") {
+                    if (level >= 3) return finish("ignore", '<<tiredness -8>><<stress 3>>', 1);
+                    return nextStage("ignore_stage", level + 1, 75 + level * 25, 2);
+                }
+                return false;
+            }
+            if (e.stage === "encourage_stage") {
+                // 主動路線為單行道；第三幕結束後才允許結算。
+                if (action === "end") {
+                    if (e.encourageStage !== 3) return false;
+                    return finish("encourage", '<<tiredness -5>><<stress -3>>', 1);
+                }
+                if (action !== "more" || e.encourageStage >= 3) return false;
+                return nextStage("encourage_stage", e.encourageStage + 1, e.encourageStage === 1 ? 350 : 500, 2);
+            }
+            return false;
         }
     });
     HM.registerMarketEncounter("directions", {

@@ -1263,61 +1263,204 @@
         <<run setup.HonestMarkets.resolveMarketEncounter("leave")>>
     <</link>>
 <</widget>>
-/* 街頭按摩師：NPC 使用既有生成機制，敘事固定稱呼按摩師。 */
+/* 街頭按摩師（v0.5.16.1）：劇情與差分集中於此。
+ * introVariant／touchVariant／responseVariant／stageVariant 為各自的既有隨機差分。
+ * 主動路線 encourageScene 則為「三幕開場＋正文」共用指針，請勿在 Twee 重新抽選。
+ * 若新增完整三幕 case，須同步更新 JS 的 STREET_MASSEUR_ENCOURAGE_SCENE_COUNT。
+ * 濕潤判定只反映當下 $vaginaWetness；不要假設隨劇情逐幕增加。
+ */
 <<widget "HonestMarketsEncounterStreetMasseur">>
     <<set _hmEncounter to setup.HonestMarkets.getMarketEncounter()>>
     <<honestMarketsEncounterDebug>>
     <<if _hmEncounter.stage is "initial">>
-        <<if _hmEncounter.introVariant is 0>>市場角落擺著一張簡易按摩椅，按摩師正招呼路過的客人，說能替你舒緩疲憊的肌肉。
-        <<elseif _hmEncounter.introVariant is 1>>你走過一排攤位，看見一名按摩師正在整理毛巾與按摩油，笑著向你推薦短時間的放鬆服務。
-        <<else>>「逛累了嗎？」路邊的按摩師拍拍空著的椅子，保證只要一刻鐘就能讓你輕鬆不少。<</if>><br><br>
+        <<switch _hmEncounter.introVariant>>
+            <<case 0>>市場角落放著一張可調整椅背的按摩椅。按摩師把毛巾搭在椅背上，見你經過便招手：「走累了吧？坐下來試試。」
+            <<case 1>>一排攤位之間擺著按摩椅和小桌，桌上整齊排著毛巾。按摩師剛送走一位客人，轉身看見你，便拍了拍椅面，介紹十五分鐘的服務。
+            <<case 2>>「肩膀僵硬嗎？」按摩師從椅旁起身，將扶手調到合適的高度，示意你坐下。周圍的叫賣聲此起彼落，小攤位卻顯得格外悠閒。
+        <</switch>><br><br>
+        <<switch _hmEncounter.exposureReaction>>
+            <<case 1>>他的目光在你的衣著上停留了一瞬，才重新露出招攬客人的笑容。<br><br>
+            <<case 2>>他注意到你身上較為暴露的地方，視線稍稍停頓，接著比剛才更熱切地邀請你坐下。<br><br>
+            <<case 3>>看見你一絲不掛地走近，他明顯愣了一下，隨即掩不住興致，連招呼你的語氣都變得格外積極。<br><br>
+        <</switch>>
         一次 £50，約十五分鐘。<br><br>
         <<link "接受按摩（£50，00:15）" "HonestMarkets Encounter Continue">><<run setup.HonestMarkets.resolveMarketEncounter("start")>><</link>> <span class="gold">金錢-£50</span><br>
         <<link "婉拒離開" "HonestMarkets Encounter Result">><<run setup.HonestMarkets.resolveMarketEncounter("leave")>><</link>>
     <<elseif _hmEncounter.stage is "touch_choice">>
-        按摩師起初動作熟練，替你按揉僵硬的肩背。然而，按摩進行到一半，對方的手卻不太安分。<br><br>
+        你依照指示坐好，按摩師將一條毛巾墊在椅背上，先用掌根按住僵硬的肩膀，再沿著背部緩緩推揉。起初力道恰到好處，附近的叫賣聲也漸漸成了背景。你正要放鬆，他的手卻偏離了原先的按摩範圍。<br><br>
         <<if _hmEncounter.targetBody is "chest">>
-            <<if _hmEncounter.touchVariant is 0>>按摩師的手從肩側滑下，若有似無地碰到你的<<chestsimple>>，卻裝作只是調整姿勢。
-            <<elseif _hmEncounter.touchVariant is 1>>對方替你舒展上半身時，指尖屢次掠過你的<<chestsimple>>，還若無其事地問你力道是否合適。
-            <<else>>按摩師嘴上說著要放鬆胸前的肌肉，手掌卻在你的<<chestsimple>>附近停留得格外久。<</if>>
+            <<switch _hmEncounter.touchVariant>>
+                <<case 0>>他扶住你的肩膀讓你坐直，另一隻手卻從肩前滑下，擦過你的<<chestsimple>>。你猛地一僵，他已經收回手，彷彿只是調整坐姿。
+                <<case 1>>他站到椅子側邊，示意你稍微轉身。手指在肩前來回按揉時，接連掠過你的<<chestsimple>>；你抬眼看他，他卻只問力道是否合適。
+                <<case 2>>「前面也有肌肉連著肩膀。」他一邊解釋，一邊把手放到你的<<chestsimple>>附近，停得比正常按摩更久。你發現他正留意你的表情。
+            <</switch>>
         <<else>>
-            <<if _hmEncounter.touchVariant is 0>>按摩師替你放鬆腰側時，手指卻幾次碰到你的<<bottomsimple>>，動作顯得刻意。
-            <<elseif _hmEncounter.touchVariant is 1>>對方說要舒緩久站的疲勞，手掌卻順著腰線滑向你的<<bottomsimple>>，讓你察覺不對勁。
-            <<else>>按摩師一邊詢問是否痠痛，一邊將手伸向你的<<bottomsimple>>附近，彷彿在試探你的反應。<</if>>
+            <<switch _hmEncounter.touchVariant>>
+                <<case 0>>按摩師扶住椅背，沿腰側往下推揉，手指卻越過腰際碰到你的<<bottomsimple>>。你回過頭，他立即把手移回背部。
+                <<case 1>>他要你稍微前傾，手掌從腰側往下按壓，卻一次次偏向你的<<bottomsimple>>。每次你想轉頭，他又恢復正常的按揉節奏。
+                <<case 2>>「站久了這附近也會痠。」按摩師在你身後蹲低一些，手掌停在你的<<bottomsimple>>旁，像是在等你開口反對。
+            <</switch>>
         <</if>><br><br>
-        <<link "拍開對方的手，立刻離開（00:05）" "HonestMarkets Encounter Result">><<run setup.HonestMarkets.resolveMarketEncounter("stop")>><</link>> <<gstress>><br>
-        <<link "警告按摩師，要求好好按摩（00:15）" "HonestMarkets Encounter Result">><<run setup.HonestMarkets.resolveMarketEncounter("warn")>><</link>><br>
-        <<link "假裝沒察覺，讓按摩繼續（00:15）" "HonestMarkets Encounter Result">><<run setup.HonestMarkets.resolveMarketEncounter("ignore")>><</link>> <<garousal>><br>
+        你知道這不是原先說好的按摩。你心裡一緊：究竟是立刻制止，還是先看看他會不會自己收手？<br><br>
+        <<link "拍開他的手，直接站起來" "HonestMarkets Encounter Result">><<run setup.HonestMarkets.resolveMarketEncounter("stop")>><</link>> <<gstress>><br>
+        <<link "盯著他，要求只做正常按摩" "HonestMarkets Encounter Result">><<run setup.HonestMarkets.resolveMarketEncounter("warn")>><</link>><br>
+        <<link "裝作沒發現，看看他還想做什麼" "HonestMarkets Encounter Continue">><<run setup.HonestMarkets.resolveMarketEncounter("ignore")>><</link>> <<garousal>><br>
         <<if hasSexStat("exhibitionism", 4)>>
-            <<link "主動表示可以繼續（00:15）" "HonestMarkets Encounter Result">><<run setup.HonestMarkets.resolveMarketEncounter("encourage")>><</link>> <<ggarousal>><br>
+            <<link "回頭說清楚你願意接受的範圍" "HonestMarkets Encounter Continue">><<run setup.HonestMarkets.resolveMarketEncounter("encourage")>><</link>> <<ggarousal>><br>
+        <</if>>
+    <<elseif _hmEncounter.stage is "ignore_stage">>
+        /* 完整場景隨機差分：每次進入階段由 JS 固定抽選一次 */
+        <<if _hmEncounter.ignoreStage is 1>>
+            <<switch _hmEncounter.stageVariant>>
+                <<case 0>>
+                    按摩師的手重新回到肩頭。你剛以為先前只是誤會，他便俯身替你調整坐姿，手掌又擦過不該碰到的位置。你抓緊扶手，回頭看他；他卻先一步問：「這個角度會不會比較舒服？」你張了張嘴，最後只擠出一句「還好」。明明想質問，卻連自己都說不清為什麼沒開口。
+                <<case 1>>
+                    旁邊攤位的叫賣聲蓋過了椅腳移動的聲響。按摩師站到你的側後方，手掌沿著背部慢慢移動，偏偏在靠近腰際時失了準頭。你往前挪了一寸，他立即停下：「弄痛你了？」那副關切的模樣讓你一時不知道怎麼回答。是你太敏感，還是他根本在等你抗議？
+                <<case 2>>
+                    「肩膀放鬆。」他輕聲提醒。你照做，卻又感到那隻手短暫越過原本的按摩範圍。你猛地挺直背，椅背發出細微的聲響。按摩師若無其事地將毛巾拉平，還替你把歪掉的扶手扶正。你盯著他熟練的動作，懷疑自己是不是被刻意當成什麼都不懂的客人。
+            <</switch>>
+        <<elseif _hmEncounter.ignoreStage is 2>>
+            <<switch _hmEncounter.stageVariant>>
+                <<case 0>>
+                    他再次從你的腰側往下按揉。你已經認得那條令人不安的路徑，手指在扶手上越收越緊。這次你轉頭得夠快，恰好看見他迅速把手移開。「力道太重？」他問。你本想說的不是這個，卻因為先前的沉默，突然覺得開口更加困難。
+                <<case 1>>
+                    一名顧客停在攤位前詢問價錢，按摩師一面回答，一面繼續替你按摩。你趁機坐直身體，想拉開距離。他等顧客走遠，才把椅背調回原來的角度。「這樣比較好施力。」他說。你望著重新熱鬧起來的走道，開始後悔第一次沒有直接站起來。
+                <<case 2>>
+                    你試著用肩膀的動作提醒他不要再靠近。他的手果然停住，還很客氣地詢問你是否需要休息。正當你以為他明白了，他卻又以幾乎相同的方式越過界線。你胸口一沉：這不是沒有察覺，而是明知故犯。
+            <</switch>>
+        <<else>>
+            <<switch _hmEncounter.stageVariant>>
+                <<case 0>>
+                    按摩師連解釋都省了。你聽見自己的呼吸變得急促，卻不是因為放鬆。攤位外的人們提著購物袋來來去去，沒有人注意到你僵硬的坐姿。你終於明白，沉默並沒有讓事情停止；下一次他再伸手，你必須為自己做出決定。
+                <<case 1>>
+                    「快結束了。」按摩師看了一眼桌上的時鐘。你原本打算忍到時間結束，卻發現自己一直在計算還剩多少分鐘。當他的手再次靠近，你猛然把身體移向椅子另一側。他停下來看你。這次你沒有避開他的目光。
+                <<case 2>>
+                    毛巾從你的肩頭滑落，按摩師伸手想替你拉好。你卻下意識地縮了一下。這個反應比任何質問都更明白。對方的笑容短暫僵住，你看著那條掉在膝上的毛巾，心想：我為什麼要一直替他的行為找藉口？
+            <</switch>>
+        <</if>><br><br>
+        <<link "猛地起身，拍開他的手" "HonestMarkets Encounter Result">><<run setup.HonestMarkets.resolveMarketEncounter("stop")>><</link>> <<gstress>><br>
+        <<link "回頭盯著他，警告別再亂碰" "HonestMarkets Encounter Result">><<run setup.HonestMarkets.resolveMarketEncounter("warn")>><</link>><br>
+        <<if _hmEncounter.ignoreStage lt 3>>
+            <<link "把質問吞回去，看看他還會做什麼" "HonestMarkets Encounter Continue">><<run setup.HonestMarkets.resolveMarketEncounter("ignore")>><</link>> <<garousal>><br>
+        <<else>>
+            <<link "忍到時間結束，立刻離開" "HonestMarkets Encounter Result">><<run setup.HonestMarkets.resolveMarketEncounter("ignore")>><</link>><br>
+        <</if>>
+        <<if hasSexStat("exhibitionism", 4)>>
+            <<link "改變主意，明確說出自己的要求" "HonestMarkets Encounter Continue">><<run setup.HonestMarkets.resolveMarketEncounter("encourage")>><</link>> <<ggarousal>><br>
+        <</if>>
+    <<elseif _hmEncounter.stage is "encourage_stage">>
+        /* 三段使用者提供的正式場景文案。部位使用原版 Widget；濕潤程度使用原版 vaginaWetness。 */
+        <<set _hmMassageWet to Number($vaginaWetness || 0)>>
+        <<set _hmMassageLower to $worn.lower and !$worn.lower.type.includes("naked")>>
+        <<set _hmMassageOverLower to $worn.over_lower and !$worn.over_lower.type.includes("naked")>>
+        <<set _hmMassageUnderLower to $worn.under_lower and !$worn.under_lower.type.includes("naked")>>
+        /* 三幕共用 encourageScene 指針：每一個 case 同時擁有開場和正文，確保跨幕連貫。
+         * 未來新增 case 時，先寫該幕專屬開場，再寫該幕正文。
+         * case 0 是目前完整的三幕文案組。
+         * 未來每新增一組，必須同時在三幕加入相同編號的 case，
+         * 然後才增加 JS 的 STREET_MASSEUR_ENCOURAGE_SCENE_COUNT。
+         * 不要在這裡 rand()，也不要使用會隨階段重抽的 stageVariant。
+         */
+        <<if _hmEncounter.encourageStage is 1>>
+            <<switch _hmEncounter.encourageScene>>
+                <<case 0>>
+            「剛才那些動作……你是故意的吧？」<br><br>
+            按摩師正想辯解，卻聽見你接著說：「我還想要更多。」<br><br>
+            他愣了一下，隨即笑得合不攏嘴。「早說嘛。」他朝街上張望一眼，壓低聲音：「這裡人來人往，跟我到裡面吧。」<br><br>
+            他領你繞過攤位旁的架子。後方還有一處不大的隔間，擺著按摩床與乾淨的毛巾。布簾一拉，街上的喧鬧頓時隔遠了些。<br><br>
+            「躺下吧。」他拍了拍床面，笑意仍藏不住。你照著躺好，聽見他在旁邊準備，心裡不禁想：自己原本只是來逛市場，怎麼會走到這一步？<br><br>
+            按摩師正專注對你的<<chestsimple>>按摩，這遠比你自己揉捏更加舒適，或許考慮要他加大力道？想到這裡，你不由得想自己何時有這種大膽的想法了？隨著對方持續揉捏按壓，你漸漸沉浸在這份舒適裡。<br><br>
+            <<if _hmMassageWet gte 45>>
+                直到稍微挪動身體，你才察覺到另一處變化：
+            <</if>>
+            <<if _hmMassageWet gte 75>>
+                <<if _hmMassageLower or _hmMassageOverLower>>下裝已經出現明顯的濕痕<<elseif _hmMassageUnderLower>>內褲已經潮濕<<else>>有液體正沿著大腿根部滴落<</if>>。
+            <<elseif _hmMassageWet gte 45>>
+                <<if _hmMassageUnderLower>>內褲已經潮濕<<elseif _hmMassageLower or _hmMassageOverLower>>下裝內側已經有些潮濕<<else>>下身已經有些潮濕<</if>>。
+            <</if>>
+            <<if _hmMassageWet gte 45>><br><br><</if>>
+            不知不覺間，這一輪按摩已經過去。<br><br>
+            <</switch>>
+        <<elseif _hmEncounter.encourageStage is 2>>
+            <<switch _hmEncounter.encourageScene>>
+                <<case 0>>
+            「換個姿勢，翻過身來吧。」按摩師笑著示意你趴下。<br><br>
+            你依言翻身，將臉頰靠上按摩床的枕墊。身後傳來他走近的腳步聲，你的<<bottomsimple>>正好朝向他；想到對方剛才那副興致勃勃的模樣，你不禁有些在意他的目光。<br><br>
+            他從床尾開始，先沿著小腿慢慢按揉，再將按摩的重心逐漸移向大腿。<br><br>
+            按摩師似乎對你的<<bottomsimple>>感興趣，大部分時間都集中按摩這個位置，對於這個位置的你不置可否，甚至有點想讓對方更深入些，對方像是察覺你的想法一樣，猛地按壓了一下<<genitals>>,對於這突然的刺激，你差点叫出聲，趕忙摀住嘴避免叫聲被其他人聽到，對此按摩師對你笑了笑，手上的動作也沒停下，手指幾乎緊貼縫隙，你敏感處被他發現了！
+            <<if _hmMassageWet gte 90>>隨著按摩繼續，液體隨著他的按壓不斷滲出。
+            <<elseif _hmMassageWet gte 75>>隨著按摩繼續，液體在手離開時甚至拉絲了。
+            <<elseif _hmMassageWet gte 60>>下身的潮濕感愈發明顯。
+            <<elseif _hmMassageWet gte 45>>按摩持續著，下身也漸漸有了些許潮濕感。
+            <</if>>
+            <</switch>>
+        <<else>>
+            <<switch _hmEncounter.encourageScene>>
+                <<case 0>>
+            「再翻過來吧。」按摩師示意你仰躺，並請你將雙腿分開，好讓他繼續接下來的按摩。你依言翻身，稍微遲疑了一下，才慢慢調整雙腿的位置。<br><br>
+            <<if !_hmMassageLower and !_hmMassageOverLower and !_hmMassageUnderLower>>
+                你這才意識到，下半身沒有任何衣物遮掩，對方能清楚看見你的<<genitals>>。<br><br>
+            <</if>>
+            想起剛才的按摩，你有些難為情，卻還是照著他的指示調整好姿勢。<br><br>
+            按摩師按壓你的<<genitals>>，你不得不承認，這非常舒服，可能比自己弄更好？想到這裡你耳根不由得發紅了，對方的動作時而溫柔輕撫時而用力按壓，且不針對外部，偶爾試探性的碰到縫隙敏感處，讓你不由得夾緊雙腿。
+            <<if _hmMassageWet gte 90>>
+                <<if _hmMassageLower or _hmMassageOverLower>>你的下裝如今已經完全濕了，緊貼著身體<<elseif _hmMassageUnderLower>>你的內褲如今已經完全濕了，緊貼著身體<<else>>下身的潮濕感如今已十分明顯<</if>>，身體對這樣色情按摩起了反應。
+            <<elseif _hmMassageWet gte 60>>
+                <<if _hmMassageLower or _hmMassageOverLower>>你的衣服帶著些許濕意<<elseif _hmMassageUnderLower>>你的內褲帶著些許濕意<<else>>你的下身帶著些許濕意<</if>>，身體對這樣色情按摩起了反應。
+            <</if>>
+            <</switch>>
+        <</if>><br><br>
+        <<if _hmEncounter.encourageStage lt 3>>
+            <<link "繼續按摩" "HonestMarkets Encounter Continue">><<run setup.HonestMarkets.resolveMarketEncounter("more")>><</link>> <<ggarousal>><br>
+        <<else>>
+            <<link "聽見計時器響起，結束服務" "HonestMarkets Encounter Result">><<run setup.HonestMarkets.resolveMarketEncounter("end")>><</link>><br>
         <</if>>
     <</if>>
 <</widget>>
 <<widget "HonestMarketsEncounterStreetMasseurResult">>
     <<set _hmEncounter to setup.HonestMarkets.getMarketEncounter()>>
-    <<if _hmEncounter.result is "declined">>你向按摩師搖搖頭，繼續穿過市場。
-    <<elseif _hmEncounter.result is "cannot_pay">>你摸了摸口袋，發現帶的現金不足 £50，只好婉拒按摩師。
-    <<elseif _hmEncounter.result is "normal">>
-        <<if _hmEncounter.responseVariant is 0>>按摩師的手法確實不錯。十五分鐘後，你起身活動肩膀，感覺身體輕鬆了不少。
-        <<elseif _hmEncounter.responseVariant is 1>>按摩師仔細按揉緊繃的肌肉，直到時間結束才收手。你向對方道謝，帶著舒緩的疲憊感離開。
-        <<else>>這次按摩平靜而有效。你伸了個懶腰，覺得剛才花的錢還算值得。<</if>>
-    <<elseif _hmEncounter.result is "stop">>
-        <<if _hmEncounter.responseVariant is 0>>你猛地拍開按摩師的手，站起來質問對方。按摩師支吾著辯解，你懶得再聽，轉身離開。
-        <<elseif _hmEncounter.responseVariant is 1>>你立刻拉開距離，要求按摩師別再碰你。對方假裝不明白，你帶著不快離開按摩椅。
-        <<else>>你推開那隻不安分的手，毫不猶豫地中止按摩。按摩師只能看著你離開。<</if>>
-    <<elseif _hmEncounter.result is "warn">>
-        <<if _hmEncounter.responseVariant is 0>>你嚴正警告按摩師。對方尷尬地收斂動作，剩下的按摩總算規規矩矩地完成。
-        <<elseif _hmEncounter.responseVariant is 1>>按摩師被你一瞪，連忙道歉。之後對方刻意保持分寸，直到服務結束。
-        <<else>>你明確要求對方別再亂碰。按摩師沒再試探，安靜地完成剩下的工作。<</if>>
-    <<elseif _hmEncounter.result is "ignore">>
-        <<if _hmEncounter.responseVariant is 0>>你沒有出聲，按摩師似乎以為你沒注意到，仍偶爾做出曖昧的小動作。時間一到，你便起身離開。
-        <<elseif _hmEncounter.responseVariant is 1>>你裝作專心放鬆，卻無法完全忽略那些不尋常的碰觸。按摩結束後，按摩師笑著送你離開。
-        <<else>>你沒有戳破按摩師的試探。十五分鐘很快過去，你帶著有些複雜的心情回到人群中。<</if>>
-    <<elseif _hmEncounter.result is "encourage">>
-        <<if _hmEncounter.responseVariant is 0>>你低聲表示不介意，按摩師先是一愣，隨後露出心照不宣的笑容。按摩結束後，你整理衣物起身離開。
-        <<elseif _hmEncounter.responseVariant is 1>>察覺你的態度後，按摩師的語氣變得親暱，但仍在約定時間結束時收手。
-        <<else>>你主動回應了按摩師的試探。對方顯得有些意外，卻沒有多問；時間一到，你們便各自道別。<</if>>
-    <</if>><br><br>
+    <<switch _hmEncounter.result>>
+        <<case "declined">>你向按摩師搖搖頭，繼續穿過市場。
+        <<case "cannot_pay">>你摸了摸口袋，發現現金不足 £50，只好婉拒。
+        <<case "normal">>
+            <<switch _hmEncounter.responseVariant>>
+                <<case 0>>
+                    你把注意力重新放回肩頸。按摩師沿著緊繃的肌肉慢慢推開，偶爾停下來確認力道，之後便不再碰觸其他位置。你感覺原本繃緊的背部漸漸鬆開，直到計時器響起才發現十五分鐘已經過去。<br><br>
+                    「今天就到這裡。」他將毛巾收好。你站起身活動肩膀，對這場終於恢復正常的按摩感到滿意，也慶幸自己及時把話說清楚。
+                <<case 1>>
+                    「好，肩背就好。」按摩師應了一聲，重新站回椅子後方。他先試了幾下較輕的力道，等你點頭才逐漸加重。你原本仍留意著他的雙手，過了一會兒才發現自己不再那麼緊張。<br><br>
+                    時間結束時，他替你把歪掉的毛巾拉好。你起身整理衣角，重新聽見周圍熱鬧的叫賣聲，心情比剛才平靜不少。
+                <<case 2>>
+                    按摩師將雙手放回肩頭，接下來的動作規矩得幾乎有些刻意。他沿著肩胛骨外側按揉，遇到特別痠痛的地方便放慢速度。你試著活動脖子，發現原先的僵硬確實減輕了。<br><br>
+                    「這邊平常容易痠吧？」他問。你簡單應了一聲。等服務結束，你向他點頭道別，決定不再多想，繼續逛市場。
+            <</switch>>
+        <<case "stop">>
+            <<switch _hmEncounter.responseVariant>>
+                <<case 0>>
+                    你猛地拍開他的手，椅腳在地上擦出刺耳的聲響。按摩師嚇了一跳，急忙說只是想替你調整姿勢，眼神卻不斷往旁邊的顧客飄。<br><br>
+                    「不用了。」你站起身，連讓他解釋的興趣都沒有。走回人群時，你仍覺得不快，至少已經不必繼續坐在那張椅子上。
+                <<case 1>>
+                    你握住扶手站起來，當面要求他別再碰你。按摩師的笑容一下子僵住，先看了看左右，才壓低聲音說自己沒有惡意。<br><br>
+                    你沒有接受這種說法，逕自離開攤位。走出一段距離後，背後的招呼聲逐漸被市場的喧鬧蓋過。
+                <<case 2>>
+                    你把身體往後一撤，椅子跟著晃了一下。「到此為止。」你說得很清楚。按摩師伸手想扶住椅背，見你瞪著他，又訕訕把手收了回去。<br><br>
+                    他還想開口，你已經轉身走向走道。比起繼續爭辯，你現在更想離那個攤位遠一點。
+            <</switch>>
+        <<case "warn">>
+            <<switch _hmEncounter.responseVariant>>
+                <<case 0>>
+                    「手放回肩膀。」你直接指出剛才越界的動作。按摩師先是一愣，隨即陪笑說自己一時沒注意。你沒有跟著笑，只是盯著他，直到他把雙手重新放回正確的位置。<br><br>
+                    接下來他明顯收斂許多，按揉肩背時甚至刻意留出距離。計時器響起，你才慢慢起身；這次服務雖然完成了，最讓你在意的卻不是按摩效果。
+                <<case 1>>
+                    按摩師試圖解釋那是放鬆肩背的技巧，還抬起手比劃了幾下。你打斷他的話，清楚表示自己只接受原先說好的部位。他的表情有些掛不住，終究還是點頭。<br><br>
+                    剩下的時間裡，他安靜地完成肩頸按摩，你也沒有再閉上眼睛。結束後，他客套地說了聲謝謝，你沒有多作回應便離開。
+                <<case 2>>
+                    你回頭警告他別再亂碰。按摩師立即縮回手，剛才那副從容的模樣消失了，連說話都變得小心。「那我只按肩膀，可以吧？」<br><br>
+                    你點頭，他才繼續動作。之後每次需要調整椅背或位置，他都先開口詢問。你不確定他是真心反省，還是怕引起旁人注意，但至少直到結束都沒有再越界。
+            <</switch>>
+        <<case "ignore">>按摩終於結束。你站起身離開，卻仍反覆想著自己明明察覺了異樣，為什麼始終沒有說出口。
+        <<case "encourage">>計時器忽然響起，清脆的鈴聲打破了隔間裡的安靜。<br><br>「今天的服務就到這裡，希望你喜歡。」按摩師笑著說完，收拾好手邊的東西，掀開布簾走了出去，將你一個人留在裡面。<br><br>你仍躺在按摩床上，身體因為尚未平復的興奮而微微顫抖。過了片刻，你才慢慢坐起身。<<if ($worn.over_lower and !$worn.over_lower.type.includes("naked")) or ($worn.lower and !$worn.lower.type.includes("naked")) or ($worn.under_lower and !$worn.under_lower.type.includes("naked")) or ($worn.upper and !$worn.upper.type.includes("naked")) or ($worn.under_upper and !$worn.under_upper.type.includes("naked"))>>你稍微整理了一下身上的衣物，<<else>>你確認自己已經準備好離開，<</if>>這才掀開布簾，回到熱鬧的市場。
+    <</switch>><br><br>
 <</widget>>
 <<widget "HonestMarketsEncounterDirections">>
 	<<honestMarketsEncounterDebug>>一名看起來不太熟悉這一帶的陌生人叫住你，問起附近某條街該往哪個方向走。<br><br>
