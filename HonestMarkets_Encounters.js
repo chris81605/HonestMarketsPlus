@@ -1943,16 +1943,18 @@
         create(e) {
             // 事件建立時拍下衣著狀態：裸體與濕透造成的暴露必須分開判定。
             const clothes = HM.marketCollectorClothing();
-            const upperExposure = Math.max(
-                HM.ambushItemExposure("upper"),
-                HM.ambushItemExposure("over_upper"),
-                HM.ambushItemExposure("under_upper")
-            );
-            const lowerExposure = Math.max(
-                HM.ambushItemExposure("lower"),
-                HM.ambushItemExposure("over_lower"),
-                HM.ambushItemExposure("under_lower")
-            );
+            // 依實際穿著的可見衣層判定；空槽 naked 不能當作暴露值 2。
+            // 有外衣時不讓缺少內衣誤判為裸露；只有外衣不存在時才查看內衣。
+            const worn = State.variables.worn || {};
+            const isWorn = slot => !!worn[slot] && worn[slot].name !== "naked"
+                && !(Array.isArray(worn[slot].type) && worn[slot].type.includes("naked"));
+            const visibleExposure = (outerSlots, underSlot) => {
+                const visibleOuter = outerSlots.filter(isWorn);
+                const slots = visibleOuter.length ? visibleOuter : (isWorn(underSlot) ? [underSlot] : []);
+                return slots.length ? Math.max(...slots.map(slot => HM.ambushItemExposure(slot))) : 2;
+            };
+            const upperExposure = visibleExposure(["over_upper", "upper"], "under_upper");
+            const lowerExposure = visibleExposure(["over_lower", "lower"], "under_lower");
             const nakedUpper = !clothes.upperOuter && !clothes.upperUnder;
             const nakedLower = !clothes.lowerOuter && !clothes.lowerUnder;
             // 0 正常、1 部分暴露、2 明顯暴露、3 全裸。
