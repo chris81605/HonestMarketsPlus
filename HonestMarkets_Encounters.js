@@ -1539,6 +1539,7 @@
         }
     });
 
+    // 缺斤少兩：先決定是否足量交貨；玩家購買後才可能察覺作弊。
     HM.registerMarketEncounter("short_measure", {
         weight: 12,
         timeWeights: { preparing: 0.7, morning: 0.9, daytime: 1.0, peak: 1.2, late: 1.4, closing: 1.2 },
@@ -1549,34 +1550,45 @@
             const offer = HM.pickEncounterOffer(o => o.qty >= 5);
             if (!offer) return;
             e.itemId = offer.id;
-            e.claimedQty = rand(8, Math.min(24, offer.qty));
+            // 下限不可高於商品庫存；5～7 份也必須能正常生成交易。
+            e.claimedQty = rand(Math.min(8, offer.qty), Math.min(24, offer.qty));
+            // 每次交易先浮動足量機率，再使用事件專用判定（可強制命中）。
+            e.fullDeliveryChance = rand(10, 50);
+            e.fullDelivery = HM.rollChance(e.fullDeliveryChance);
             const minActual = Math.max(1, Math.floor(e.claimedQty * 0.60));
             const maxActual = Math.max(minActual, Math.min(e.claimedQty - 1, Math.floor(e.claimedQty * 0.85)));
-            e.actualQty = rand(minActual, maxActual);
-            // 看似划算：按實際交貨量附近收費，但對外宣稱是 claimedQty 份。
+            e.actualQty = e.fullDelivery ? e.claimedQty : rand(minActual, maxActual);
+            // 沿用原本「虛報優惠」設計：按實際交貨量附近報價。
             e.price = Math.max(1, Math.round(offer.wholesaleUnit * e.actualQty * rand(95, 110) / 100));
         },
         resolve(e, action) {
+            if (e.result || e.stage !== "initial") return false;
+            if (action === "leave") { e.result = "left"; return true; }
+            if (action !== "buy") return false;
             const offer = HM.encounterOffer(e);
-            if (action === "buy") {
-                if (!offer || offer.qty < e.actualQty || !HM.encounterCanPay(e.price)) { e.result = "cannot_buy"; return true; }
-                Wikifier.wikifyEval(`<<tending_give ${JSON.stringify(e.itemId)} ${e.actualQty}>><<money -${e.price}>><<stress 1>>`);
-                offer.qty -= e.actualQty;
-                offer.wholesaleTotal = offer.qty > 0 ? Math.max(1, Math.round(offer.wholesaleUnit * offer.qty)) : 0;
-                if (typeof HM.advanceMinutes === "function") HM.advanceMinutes(5);
-                e.result = "cheated";
-            } else if (action === "question") {
-                if (HM.rollChance(70)) {
-                    e.price = Math.max(1, Math.round((offer?.wholesaleUnit || 1) * e.claimedQty));
-                    e.stage = "corrected";
-                } else e.result = "denied";
-            } else if (action === "buy_corrected" && e.stage === "corrected") {
-                if (!offer || offer.qty < e.claimedQty || !HM.encounterCanPay(e.price)) { e.result = "cannot_buy"; return true; }
+            if (!offer || offer.qty < e.claimedQty || !HM.encounterCanPay(e.price)) {
+                e.result = "cannot_buy";
+                return true;
+            }
+            if (e.fullDelivery) {
                 if (!HM.encounterBuy(e, e.claimedQty, e.price)) { e.result = "cannot_buy"; return true; }
+                e.deliveredQty = e.claimedQty;
+                e.result = "full_delivery";
+                return true;
+            }
+            // 詭術越高越容易當場發現；機率漸近 85%，不會保證成功。
+            const skill = Math.max(0, Number(HM.getSkulduggery()) || 0);
+            e.detectChance = Math.min(85, Math.round(10 + 75 * skill / (skill + 500)));
+            e.detected = HM.rollChance(e.detectChance);
+            e.deliveredQty = e.detected ? e.claimedQty : e.actualQty;
+            if (!HM.encounterBuy(e, e.deliveredQty, e.price)) { e.result = "cannot_buy"; return true; }
+            if (e.detected) {
                 Wikifier.wikifyEval("<<stress -1>>");
-                e.result = "corrected_buy";
-            } else if (action === "leave") e.result = "left";
-            else return false;
+                e.result = "caught_short";
+            } else {
+                Wikifier.wikifyEval("<<stress 1>>");
+                e.result = "cheated";
+            }
             return true;
         }
     });
@@ -2297,13 +2309,17 @@
     };
     // 起始幕與後續跳幕只依「身體衣物」判斷；鞋襪與飾品不阻止進入最終幕。
     // 外衣（含罩衫）優先保留前兩幕；沒有外衣但仍有內衣則從第三幕開始。
-    HM.photographerClothingState = function () {
+    // 共用身體衣物狀態：只檢查外衣、上下裝、內衣及生殖器遮蔽物，不計鞋襪與配件。
+    // 供攝影師分幕與裸體救助事件共用，避免事件之間依賴專屬命名。
+    HM.bodyClothingState = function () {
         const worn = State.variables.worn || {};
         const has = slot => !!worn[slot]?.name && worn[slot].name !== "naked";
         const outer = ["over_upper", "over_lower", "upper", "lower"].some(has);
         const underwear = ["under_upper", "under_lower", "genitals"].some(has);
         return { outer, underwear, bare: !outer && !underwear };
     };
+    // 保留攝影師原有呼叫名稱，避免改動既有事件流程。
+    HM.photographerClothingState = HM.bodyClothingState;
     HM.photographerFirstPhase = function () {
         const state = HM.photographerClothingState();
         return state.outer ? 0 : (state.underwear ? 2 : 3);
@@ -2674,12 +2690,54 @@
         }
     });
 
+    // 好心的攤販（v0.5.17.0）：身體衣物全失時加入候選池；鞋襪與飾品不影響判定。
+    // 以較高時段權重提高白天的相對出現率，不改動市場遭遇總觸發率。
+    HM.registerMarketEncounter("kind_vendor_towel", {
+        weight: 32,
+        timeWeights: { preparing: 0.5, morning: 2.0, daytime: 4.0, peak: 3.0, late: 0.5, closing: 0.25 },
+        npc: false,
+        output: "HonestMarketsEncounterKindVendorTowel",
+        resultOutput: "HonestMarketsEncounterKindVendorTowelResult",
+        eligible() {
+            // 共用裸體判定：鞋襪與飾品不影響救助資格。
+            if (!State.variables.worn || typeof State.variables.worn !== "object") return false;
+            return HM.bodyClothingState().bare;
+        },
+        create(e) {
+            // 隨機結果只抽取一次；使用模組的可強制命中隨機機制。
+            const V = State.variables;
+            e.bonusPepperSpray = Number(V.spray) < Number(V.spraymax) && HM.rollChance(25);
+            e.bonusClothingMoney = HM.rollChance(20);
+        },
+        resolve(e, action) {
+            if (e.stage !== "initial" || e.result) return false;
+            if (action === "accept") {
+                // 沿用既有事件的原版浴巾穿戴巨集；只在有效選項點擊時執行一次。
+                Wikifier.wikifyEval("<<towelup>>");
+                const V = State.variables;
+                // 發放時再檢查容量，避免事件建立後裝備數量發生變動。
+                e.receivedPepperSpray = !!e.bonusPepperSpray && Number(V.spray) < Number(V.spraymax);
+                if (e.receivedPepperSpray) V.spray = Number(V.spray) + 1;
+                e.receivedClothingMoney = !!e.bonusClothingMoney;
+                // 原版 money 巨集以便士為單位，£500 = 50000 便士。
+                if (e.receivedClothingMoney) Wikifier.wikifyEval("<<money 50000>>");
+                e.result = "accepted";
+                return true;
+            }
+            if (action === "decline") {
+                e.result = "declined";
+                return true;
+            }
+            return false;
+        }
+    });
+
     HM.marketEncounterLabels = {
         hidden_couple:"貨堆後的動靜", underwear_collector:"識貨的收藏家", alley_photographer:"可疑的攝影師", found_money:"撿到零錢", pickpocket:"扒手", market_ambush:"三人騷擾", crowd_grope:"性騷擾", suspicious_clothier:"不懷好意的小販", temporary_model:"臨時服裝模特兒", flash_sale:"臨時特價",
         market_rumor:"市場情報", short_measure:"缺斤少兩", hot_item:"搶手商品", lost_property:"遺失物",
         mistaken_regular:"認錯熟客", pushy_vendor:"推銷討價", vendor_gift:"攤販贈品",
         dropped_goods:"商品摔落", queue_jumper:"插隊爭執", market_argument:"市場爭吵", beggar:"討錢者",
-        street_performer:"街頭藝人", street_masseur:"街頭按摩師", directions:"陌生人問路", sleeping_vendor:"商販打瞌睡", suspicious_goods:"可疑商品", carry_goods:"搬貨請求"
+        kind_vendor_towel:"好心的攤販", street_performer:"街頭藝人", street_masseur:"街頭按摩師", directions:"陌生人問路", sleeping_vendor:"商販打瞌睡", suspicious_goods:"可疑商品", carry_goods:"搬貨請求"
     };
 
     HM.forceSelectedMarketEncounter = function () {

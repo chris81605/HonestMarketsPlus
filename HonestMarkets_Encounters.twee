@@ -985,34 +985,18 @@
 <</widget>>
 
 <<widget "HonestMarketsEncounterShortMeasure">>
-	<<set _hmEncounter to setup.HonestMarkets.getMarketEncounter()>>
-	<<honestMarketsEncounterDebug>>
-	<<if _hmEncounter.stage is "corrected">>
-		攤販盯著你看了兩秒，嘴角抽了一下。<br><br>
-		「行、行，你眼睛真利。」對方把原本包好的貨重新拆開，當著你的面把缺掉的分量一份份補回去。「<<print _hmEncounter.claimedQty>> 份就是 <<print _hmEncounter.claimedQty>> 份，這次總行了吧？」<br><br>
-		重新算過後，<<print _hmEncounter.claimedQty>> 份<<foodstufficon _hmEncounter.itemId>>「<<print setup.HonestMarkets.encounterItemName(_hmEncounter.itemId)>>」一共 <<print setup.HonestMarkets.moneyText(_hmEncounter.price)>>。<br><br>
-		<<set _hmLabel to "照正常分量買下（" + setup.HonestMarkets.moneyText(_hmEncounter.price) + "）(00:05)">>
-		<<link _hmLabel "HonestMarkets Encounter Result">>
-			<<run setup.HonestMarkets.resolveMarketEncounter("buy_corrected")>>
-		<</link>> <span class="gold">金錢-</span> <span class="green">物品+</span> <<lstress>><br>
-		<<link "算了，不跟這攤做生意" "HonestMarkets Encounter Result">>
-			<<run setup.HonestMarkets.resolveMarketEncounter("leave")>>
-		<</link>>
-	<<else>>
-		「這一包算你 <<print setup.HonestMarkets.moneyText(_hmEncounter.price)>>，便宜吧？」一名攤販見你經過，立刻提起一大包<<foodstufficon _hmEncounter.itemId>>「<<print setup.HonestMarkets.encounterItemName(_hmEncounter.itemId)>>」朝你晃了晃，嘴上說裡頭足足有 <<print _hmEncounter.claimedQty>> 份。<br><br>
-		價錢聽起來確實不壞，可那沉甸甸的一包怎麼看都不像真有 <<print _hmEncounter.claimedQty>> 份的分量。<br><br>
-		對方笑著把整包商品推到你面前，等著你的回答。<br><br>
-		<<set _hmLabel to "直接買下（" + setup.HonestMarkets.moneyText(_hmEncounter.price) + "）(00:05)">>
-		<<link _hmLabel "HonestMarkets Encounter Result">>
-			<<run setup.HonestMarkets.resolveMarketEncounter("buy")>>
-		<</link>> <span class="gold">金錢-</span> <span class="green">物品+</span> <<gstress>><br>
-		<<link "指出分量不對" "HonestMarkets Encounter Continue">>
-			<<run setup.HonestMarkets.resolveMarketEncounter("question")>>
-		<</link>><br>
-		<<link "不買了" "HonestMarkets Encounter Result">>
-			<<run setup.HonestMarkets.resolveMarketEncounter("leave")>>
-		<</link>>
-	<</if>>
+    <<set _hmEncounter to setup.HonestMarkets.getMarketEncounter()>>
+    <<honestMarketsEncounterDebug>>
+    「這一包算你 <<print setup.HonestMarkets.moneyText(_hmEncounter.price)>>，便宜吧？」一名攤販見你經過，笑著提起一包<<foodstufficon _hmEncounter.itemId>>「<<print setup.HonestMarkets.encounterItemName(_hmEncounter.itemId)>>」。<br><br>
+    「裡頭有 <<print _hmEncounter.claimedQty>> 份，今天正好有優惠，錯過可就沒有了。」<br><br>
+    對方熟練地把商品包好，推到你面前，等著你決定是否成交。<br><br>
+    <<set _hmLabel to "買下（" + setup.HonestMarkets.moneyText(_hmEncounter.price) + "）(00:05)">>
+    <<link _hmLabel "HonestMarkets Encounter Result">>
+        <<run setup.HonestMarkets.resolveMarketEncounter("buy")>>
+    <</link>> <span class="gold">金錢-</span> <span class="green">物品+</span><br>
+    <<link "不買了" "HonestMarkets Encounter Result">>
+        <<run setup.HonestMarkets.resolveMarketEncounter("leave")>>
+    <</link>>
 <</widget>>
 
 <<widget "HonestMarketsEncounterHotItem">>
@@ -1156,8 +1140,23 @@
 <</widget>>
 
 <<widget "HonestMarketsEncounterShortMeasureResult">>
-	<<set _hmEncounter to setup.HonestMarkets.getMarketEncounter()>>
-	<<if _hmEncounter.result is "cheated">>你付了錢，把那一大包<<foodstufficon _hmEncounter.itemId>>「<<print setup.HonestMarkets.encounterItemName(_hmEncounter.itemId)>>」拿到手裡。真正整理時，你才確定剛才的直覺沒有錯——說好的 <<print _hmEncounter.claimedQty>> 份，裡頭實際只有 <<print _hmEncounter.actualQty>> 份。少掉的可不是一點零頭。<br><br>等你回頭時，攤販已經忙著招呼別人，臉上的笑容跟剛才一模一樣。<br><br><<elseif _hmEncounter.result is "corrected_buy">>你當著攤販的面重新確認過分量，這次確實是完整的 <<print _hmEncounter.claimedQty>> 份。對方收錢時一直避開你的視線，動作倒比剛才老實多了。<br><br><<elseif _hmEncounter.result is "denied">>攤販臉色一沉，直接把貨收了回去。「不買就別亂說，我做生意從來都是這個分量。」<br><br>周圍已經有人朝這邊看過來。對方顯然不打算承認，你也沒必要為這包東西繼續耗下去。<br><br><<elseif _hmEncounter.result is "cannot_buy">>談到最後，你才發現身上的錢不足以完成這筆交易。攤販不耐煩地把整包商品收回去，嘴裡還嘀咕了幾句。<br><br><<else>>你看了看那包分量可疑的商品，最後還是轉身離開。攤販在身後喊了兩句，見你沒有回頭，很快又把同樣的笑容轉向下一名客人。<br><br><</if>>
+    <<set _hmEncounter to setup.HonestMarkets.getMarketEncounter()>>
+    <<if _hmEncounter.result is "full_delivery">>
+        你付了錢，接過攤販包好的<<foodstufficon _hmEncounter.itemId>>「<<print setup.HonestMarkets.encounterItemName(_hmEncounter.itemId)>>」。這包商品確實有他說的 <<print _hmEncounter.claimedQty>> 份，這次看來真買到了不錯的優惠。<br><br>
+        攤販笑著向你揮揮手，轉身繼續招呼下一位客人。<br><br>
+    <<elseif _hmEncounter.result is "caught_short">>
+        你付了錢，接過那包<<foodstufficon _hmEncounter.itemId>>「<<print setup.HonestMarkets.encounterItemName(_hmEncounter.itemId)>>」，正要離開時，卻察覺手裡的分量不太對。仔細一看，說好的 <<print _hmEncounter.claimedQty>> 份，實際竟只有 <<print _hmEncounter.actualQty>> 份。<br><br>
+        你當場指出數量不足，要求他把缺少的商品補齊。攤販的笑容僵了一下，朝四周張望，似乎怕事情鬧大。<br><br>
+        「好啦、好啦！可能是剛才裝錯了。」他不情不願地補上剩下的 <<print _hmEncounter.claimedQty - _hmEncounter.actualQty>> 份，直到你拿到完整的 <<print _hmEncounter.claimedQty>> 份才肯罷休。<br><br>
+    <<elseif _hmEncounter.result is "cheated">>
+        你付了錢，帶著那包<<foodstufficon _hmEncounter.itemId>>「<<print setup.HonestMarkets.encounterItemName(_hmEncounter.itemId)>>」繼續逛市場。過了一陣子，你才覺得分量似乎有點不對。<br><br>
+        仔細清點後，你發現攤販明明說有 <<print _hmEncounter.claimedQty>> 份，實際卻只有 <<print _hmEncounter.actualQty>> 份。你連忙折返，想找他理論，但原本的攤位已經空了。<br><br>
+        那名攤販早已收拾東西、轉移陣地，不知道消失到哪裡去了。<br><br>
+    <<elseif _hmEncounter.result is "cannot_buy">>
+        你打算買下這包商品，卻發現身上的錢不足，或攤位已經沒有足夠的存貨完成交易。攤販只好把商品收了回去。<br><br>
+    <<else>>
+        你沒有買下這包商品。攤販也沒強求，很快又轉頭招呼其他經過的客人。<br><br>
+    <</if>>
 <</widget>>
 
 <<widget "HonestMarketsEncounterHotItemResult">>
@@ -1941,6 +1940,51 @@
 <</if>>
 <</widget>>
 
+/* 好心的攤販：單階段事件，穿戴效果只在 JS resolve() 的 accept 分支執行。 */
+<<widget "HonestMarketsEncounterKindVendorTowel">>
+    <<set _hmKindVendor to setup.HonestMarkets.getMarketEncounter()>>
+    <<if _hmKindVendor and _hmKindVendor.id is "kind_vendor_towel" and _hmKindVendor.stage is "initial" and !_hmKindVendor.result>>
+        你一絲不掛地走在市場裡。附近一名攤販注意到你的模樣，猶豫片刻，還是從攤位後方走了過來。<br><br>
+        「等等……你還好嗎？」<br><br>
+        他看了看你，又很快移開視線，刻意壓低聲音，免得引來更多人的注意。<br><br>
+        「我不勉強你說出自己遭遇了什麼慘事。不過，一絲不掛地在街上亂晃實在太危險了。」<br><br>
+        他翻找了一會兒，拿出一條乾淨的大浴巾。<br><br>
+        「我這裡沒有多餘的衣服能給你，但至少還有這條浴巾。拿去包著吧，總比什麼都沒穿好。」<br><br>
+        <<link "收下浴巾" "HonestMarkets Encounter Result">>
+            <<run setup.HonestMarkets.resolveMarketEncounter("accept")>>
+        <</link>><br>
+        <<link "婉拒好意" "HonestMarkets Encounter Result">>
+            <<run setup.HonestMarkets.resolveMarketEncounter("decline")>>
+        <</link>>
+    <</if>>
+<</widget>>
+
+<<widget "HonestMarketsEncounterKindVendorTowelResult">>
+    <<set _hmKindVendor to setup.HonestMarkets.getMarketEncounter()>>
+    <<if _hmKindVendor and _hmKindVendor.id is "kind_vendor_towel">>
+        <<if _hmKindVendor.result is "accepted">>
+            你接過浴巾，將它仔細裹在身上，總算有東西能遮住赤裸的身體。<br><br>
+            「這樣好多了。」攤販鬆了口氣。「路上小心。」<br><br>
+            <<if _hmKindVendor.receivedPepperSpray>>
+                他似乎還是有些不放心，又從攤位裡拿出一瓶防狼噴霧。<br><br>
+                「這個也帶著吧。萬一又遇到危險，至少還有東西能保護自己。」<br><br>
+                <span class="green">你獲得了一瓶防狼噴霧。</span><br><br>
+            <</if>>
+            <<if _hmKindVendor.receivedClothingMoney>>
+                攤販看著你身上的浴巾，想了想，又掏出幾張鈔票交到你手裡。<br><br>
+                「光靠浴巾也不是辦法。這五百鎊拿去買些衣服吧，不用還我。」<br><br>
+                <span class="green">你獲得了 £500。</span><br><br>
+            <</if>>
+            你向他道謝，重新走入市場的人潮。<br><br>
+        <<elseif _hmKindVendor.result is "declined">>
+            你搖搖頭，婉拒了他的好意。<br><br>
+            「好吧，我不勉強你。」攤販收回浴巾，仍有些擔憂地望著你。「至少自己小心點。」<br><br>
+            他沒有繼續追問，你就這麼離開了攤位。<br><br>
+        <</if>>
+    <</if>>
+<</widget>>
+
+
 :: HonestMarkets Photographer Widgets[widget]
 <<widget "HonestMarketsEncounterPhotographer">>
     <<set _hmPhoto to setup.HonestMarkets.getMarketEncounter()>>
@@ -2251,6 +2295,7 @@
 <<honestMarketsEncounterResult>>
 <<run setup.HonestMarkets.clearMarketEncounter()>>
 <<link "繼續逛市集" setup.HonestMarkets.marketEncounterReturnPassage()>><<endevent>><</link>>
+
 
 :: HonestMarkets Encounter[]
 <<honestMarketsEncounter>>
